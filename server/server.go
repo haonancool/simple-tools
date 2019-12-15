@@ -40,7 +40,7 @@ func (s *Server) Start() error {
 }
 
 func (s *Server) handleGetMyIP(w http.ResponseWriter, r *http.Request) {
-	host, _, err := net.SplitHostPort(r.RemoteAddr)
+	clientIP, err := getClientIP(r)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		fmt.Fprintf(w, "bad addr: %s", r.RemoteAddr)
@@ -48,5 +48,20 @@ func (s *Server) handleGetMyIP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(host))
+	w.Write([]byte(clientIP))
+}
+
+func getClientIP(r *http.Request) (string, error) {
+	// get from header
+	host := r.Header.Get("X-Real-IP")
+	if host != "" {
+		return host, nil
+	}
+
+	// get from remote addr
+	host, _, err := net.SplitHostPort(r.RemoteAddr)
+	if err != nil {
+		return "", fmt.Errorf("bad addr: %s", r.RemoteAddr)
+	}
+	return host, nil
 }
